@@ -11,10 +11,9 @@ def get_actions():
 
 if __name__ == "__main__":
     grid = GridWorld()
-    # next_states = grid.get_successor_states((1, 0), GridWorld.Action.R)
-    # print(next_states)
-
     actions = get_actions()
-    # policy = get_random_uniform_policy(grid)
-    policy = get_random_uniform_policy()
+    policy = get_random_uniform_policy
     policyEvaluator = PolicyEvaluation(grid, policy, actions)
+    
+    policyEvaluator.evaluate_policy()
+    policyEvaluator.render_value_function()

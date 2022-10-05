@@ -31,10 +31,30 @@ class GridWorld:
                      [self.Cell.W, self.Cell.S, self.Cell.W, self.Cell.W]]
         self.row_size =  len(self.map)
         self.column_size = len(self.map[0])
+        self.gamma = 0.9
     
     def reward(self, action, state):
         cell_type = self.map[state[0]][state[1]]
         return self.rewards[cell_type]
+
+    def validate_states_index(self, next_states, current_state):
+        for idx, next_st in enumerate(next_states):
+            row = next_st[0]
+            column = next_st[1]
+            if row == -1:
+                row += 1
+            elif row == self.row_size:
+                row += -1
+            if column == -1:
+                column += 1
+            elif column == self.column_size:
+                column += -1
+            
+            next_states[idx] = (row, column)
+            if self.map[row][column] == self.Cell.O:
+                next_states[idx] = current_state            
+
+        return next_states
 
     def get_successor_states_for_trans_prob(self, current_state, action):
         next_states = []
@@ -47,24 +67,9 @@ class GridWorld:
         for not_int_a in actions_not_intended:
             state_not_intended = (current_state[0] + not_int_a[0], current_state[1] + not_int_a[1])
             next_states.append(state_not_intended)
-        
-        # make sure indexes are right 
-        for idx, next_st in enumerate(next_states):
-            row = next_st[0]
-            column = next_st[1]
-            if self.map[row][column] == self.Cell.O:
-                next_states[idx] = current_state
-                continue
-            if row == -1:
-                row += 1
-            elif row == self.row_size:
-                row += -1
-            if column == -1:
-                column += 1
-            elif column == self.column_size:
-                column += -1
-            next_states[idx] = (row, column)
-        return next_states        
+
+        next_states_validated = self.validate_states_index(next_states, current_state)
+        return next_states_validated        
 
     def get_successor_states(self, current_state, action):
         next_states = self.get_successor_states_for_trans_prob(current_state, action)
@@ -75,11 +80,22 @@ class GridWorld:
         q = 1 - p
 
         state_intended = (current_state[0] + action[0], current_state[1] + action[1])
-        next_states = self.get_successor_states_for_trans_prob(current_state, action)
-        states_not_intended = [st for st in next_states if st != state_intended]
-        if state_intended
+        state_intended_vd = self.validate_states_index([state_intended], current_state)[0]
 
+        next_states_vd = self.get_successor_states_for_trans_prob(current_state, action)
+        count_ = next_states_vd.count(next_state)
 
-        # next_state_count = next_states.count(next_state)
-        # prob = next_state_count/len(next_states)
-        # return prob
+        if next_state == state_intended_vd:
+            if count_ == 2:
+                return p + q/2
+            elif count_ == 1:
+                return p
+            elif count_ == 0:
+                return 0
+        else:
+            if count_ == 2:
+                return q
+            elif count_ == 1:
+                return q/2
+            elif count_ == 0:
+                return 0

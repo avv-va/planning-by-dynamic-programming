@@ -1,3 +1,6 @@
+import copy
+from grid_world import GridWorld
+
 
 class PolicyEvaluation:
 
@@ -5,6 +8,7 @@ class PolicyEvaluation:
         self.policy = policy
         self.grid = grid
         self.actions = actions
+        self.tolerance = 0.004
     
     def init_value_func(self):
         value_func = []
@@ -14,18 +18,20 @@ class PolicyEvaluation:
                 value_row.append(0)
             value_func.append(value_row)
         return value_func
-                
-    def successor_states(self, state): pass
 
     def evaluate_policy(self):
         value_function = self.init_value_func()
-        k = 0
-        while k < 10:
+        self.value_function = copy.deepcopy(value_function)
+        has_converged = False
 
-            for row in range(self.grid.row_size):
-                for column in range(self.grid.column_size):
+        while not has_converged:
+            for row in range(0, self.grid.row_size):
+                for column in range(0, self.grid.column_size):
                     state = (row, column)
-                    
+                    cell_type = self.grid.map[state[0]][state[1]]
+                    if cell_type == GridWorld.Cell.O:
+                        continue
+
                     v_s = 0
                     for action in self.actions:
                         successor_states = self.grid.get_successor_states(state, action) # the successor states if I take action action in state state
@@ -38,17 +44,30 @@ class PolicyEvaluation:
                         
                         policy_a_s = self.policy(self.grid, action, state)  # if you are at state state, probability you take action action
                         reward_s_a = self.grid.reward(action, state) # the reward if I take action action in state state
-                        gama = self.grid.gama
-                        v_s += policy_a_s * (reward_s_a + gama * inner_sum)
+                        gamma = self.grid.gamma
 
+                        v_s += policy_a_s * (reward_s_a + gamma * inner_sum)
                     value_function[state[0]][state[1]] = v_s
 
 
+            has_converged = self.has_converged(value_function)
+            self.value_function = copy.deepcopy(value_function)
 
 
+    def has_converged(self, value_function):
+        max_diff = 0
+        all_zero = True
+        for r_idx, row in enumerate(value_function):
+            if all(row) != 0:
+                all_zero = False
+            for c_idx, _ in enumerate(value_function):
+                diff = self.value_function[r_idx][c_idx] - value_function[r_idx][c_idx]
+                if diff >= max_diff:
+                    max_diff = diff
+
+        return max_diff <= self.tolerance and not all_zero
 
 
-
-                    
-
-        
+    def render_value_function(self):
+        for value_row in enumerate(self.value_function):
+            print(value_row)
